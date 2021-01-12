@@ -1,7 +1,7 @@
 # Welcome to MyProject!
 ![](https://media.giphy.com/media/XD9o33QG9BoMis7iM4/giphy.gif)
 
-**(DANGER! This gif may harm your eyes)**
+*(DANGER! This gif may harm your eyes)*
 <br/>
 <br/>
 ### *TheElephant explanation goes here.*
@@ -14,30 +14,30 @@
  Linux/Windows can be downloaded [here](https://releases.hashicorp.com/terraform/0.14.3/) 
  macOS using brew `brew install terraform@0.14`
 
-## How-to use  
+## How to use  
 
-Under _[variables.tf](http://variables.tf),_ set-up your [AWS profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) (the default is profile is`default`) 
+Under _[variables.tf](http://variables.tf),_ set-up your [AWS profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) (the default profile is `default`) 
 
-to start the Infrastructure provisioning, run the following commands:
+to start the infrastructure provisioning, run the following commands:
 
 `terraform init`
 
 `terraform apply --auto-approve`
 
-At the end of the provisioning, you will get the output of:
+Once the provisioning ends, you will get the following output:
 
- - The *public* IPs of the bastion servers
- - The *private* IPs of the Jenkins Master and Workers
- - The *private* IPs of the Consul servers
+ - The *public* IP addresses of the bastion servers
+ - The *private* IP address of the Jenkins Master and Workers
+ - The *private* IP addresses of the Consul servers
 
-A general certificate `gen_key.pem` will be generated during the provisioning which can be use to login all the hosts.
+A general certificate `gen_key.pem` will be generated during the provisioning which can be used to login to all the hosts.
 
-## Connect the environment using the bastion hosts 
+## Connect to the environment using the bastion hosts 
 
 In order to keep the environment safe, the private network is not available directly from the WWW. 
-Set up an SSH tunnel using one of the bastion hosts to securely be part of this private network.
+Set up an SSH tunnel using one of the bastion hosts to securely be a part of this private network.
 
-To set up the SSH tunnel run the flowing command:
+To set up the SSH tunnel, run the following command:
 
     ssh -i gen_key.pem -N -L 127.0.0.1:(the required port):(the host IP address):(the host's required port) -p 22 ubuntu@(the public bastion's server IP address)
 
