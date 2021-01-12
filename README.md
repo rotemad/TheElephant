@@ -14,9 +14,9 @@
  Linux/Windows can be downloaded [here](https://releases.hashicorp.com/terraform/0.14.3/) 
  macOS using brew `brew install terraform@0.14`
 
-## How to use  
+## How To use  
 
-Under _[variables.tf](http://variables.tf),_ set-up your [AWS profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) (the default profile is `default`) 
+Under _[variables.tf](https://github.com/rotemad/TheElephant/blob/main/variables.tf),_ set-up your [AWS profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) (the default profile is `default`) 
 
 to start the infrastructure provisioning, run the following commands:
 
@@ -34,8 +34,8 @@ A general certificate `gen_key.pem` will be generated during the provisioning wh
 
 ## Connect to the environment using the bastion hosts 
 
-In order to keep the environment safe, the private network is not available directly from the WWW. 
-Set up an SSH tunnel using one of the bastion hosts to securely be a part of this private network.
+To keep the environment safe, the private network is not available directly from the <span>WWW</span>.
+In order to access this private network in a secured manner, you’ll need to set up an SSH tunnel using one of the bastion hosts
 
 To set up the SSH tunnel, run the following command:
 
