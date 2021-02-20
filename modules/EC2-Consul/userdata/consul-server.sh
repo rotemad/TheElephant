@@ -38,6 +38,9 @@ cat << EOF > /etc/consul.d/server_config.json
   "bootstrap_expect": 3,
   "ui": true,
   "client_addr": "0.0.0.0"
+  "telemetry": {
+    "prometheus_retention_time": "10m"
+  }
 }
 EOF
 chown --recursive consul:consul /etc/consul.d/server_config.json
