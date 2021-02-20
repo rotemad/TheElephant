@@ -11,7 +11,7 @@ resource "aws_instance" "consul-servers" {
   user_data              = file("${path.module}/userdata/consul-server.sh")
 
   tags = {
-    Name          = "consul-server-${count.index + 1}"
+    Name          = "elephant-consul-server-${count.index + 1}"
     consul-server = "true"
   }
 }

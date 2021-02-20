@@ -11,3 +11,7 @@ data "aws_ami" "ubuntu" {
   }
   owners = ["099720109477"] # Canonical
 }
+
+#data "aws_iam_instance_profile" "consul-join" {
+#  name = "opsschool-consul-join"
+#}

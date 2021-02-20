@@ -8,6 +8,7 @@ module "EC2-Jenkins" {
   private_subnet_az              = module.VPC.private-subnet-az
   jenkins_private_security_group = module.VPC.private-sg-jenkins
   key_pair                       = module.VPC.aws-keypair
+  consul_instance_profile        = module.EC2-Consul.consul-instance-profile
 }
 
 module "EC2-Consul" {
@@ -24,7 +25,7 @@ module "EKS" {
  private_subnet_id_for_eks     = module.VPC.private-subnets-for-eks
 }
 
-output "Bastion-Hosts" {
+output "Bastion-Host" {
   value = module.VPC.bastion-servers
 }
 output "Jenkins-Master" {
@@ -35,4 +36,7 @@ output "Jenkins-Workers" {
 }
 output "Consul-Servers" {
   value = module.EC2-Consul.consul-servers
+}
+output "EKS-Cluster-Name" {
+  value = module.EKS.cluster_name
 }

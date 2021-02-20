@@ -13,7 +13,10 @@ variable "key_pair" {
 variable "private_subnet_az" {
 }
 
-variable "user_data_master" {
+variable "consul_instance_profile" {
+}
+
+/*variable "user_data_master" {
   default = <<-EOF
               #!/bin/bash
               apt-get update
@@ -47,3 +50,11 @@ variable "user_data_slave" {
               systemctl start docker
               EOF
 }
+
+data "template_file" "consul-agent-install-master" {
+  template = file("${path.module}/userdata/consul-agent-jenkins-master.sh")
+}
+
+data "template_file" "consul-agent-install-worker" {
+  template = file("${path.module}/userdata/consul-agent-jenkins-worker.sh")
+}*/
