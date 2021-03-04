@@ -19,6 +19,15 @@ module "EC2-Consul" {
   key_pair                      = module.VPC.aws-keypair
 }
 
+module "EC2-Prometheus-Grafana" {
+  source                            = "./modules/EC2-Prometheus-Grafana"
+  private_subnet_id                 = module.VPC.private-subnets
+  private_subnet_az                 = module.VPC.private-subnet-az
+  prometheus_private_security_group = module.VPC.private-sg-prometheus
+  key_pair                          = module.VPC.aws-keypair
+  consul_instance_profile           = module.EC2-Consul.consul-instance-profile
+}
+
 module "EKS" {
  source                        = "./modules/EKS"
  vpc_id                        = module.VPC.vpc-id
@@ -36,6 +45,9 @@ output "Jenkins-Workers" {
 }
 output "Consul-Servers" {
   value = module.EC2-Consul.consul-servers
+}
+output "Prometheus-Grafana-Server" {
+  value = module.EC2-Prometheus-Grafana.prometheus-server
 }
 output "EKS-Cluster-Name" {
   value = module.EKS.cluster_name

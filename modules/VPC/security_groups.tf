@@ -47,7 +47,7 @@ resource "aws_security_group" "private-sg-consul" {
     protocol    = "tcp"
     cidr_blocks = ["10.10.0.0/16"]
   }
-  
+
   ingress {
     description = "Consul port"
     from_port   = 8500
@@ -63,7 +63,7 @@ resource "aws_security_group" "private-sg-consul" {
     protocol    = "tcp"
     cidr_blocks = ["10.10.0.0/16"]
   }
-  
+
   ingress {
     description = "Consul port"
     from_port   = 8600
@@ -71,7 +71,7 @@ resource "aws_security_group" "private-sg-consul" {
     protocol    = "udp"
     cidr_blocks = ["10.10.0.0/16"]
   }
-  
+
   ingress {
     description = "Consul port"
     from_port   = 8301
@@ -92,6 +92,14 @@ resource "aws_security_group" "private-sg-consul" {
     description = "Consul port"
     from_port   = 8300
     to_port     = 8300
+    protocol    = "tcp"
+    cidr_blocks = ["10.10.0.0/16"]
+  }
+
+  ingress {
+    description = "node-exporter port"
+    from_port   = 9100
+    to_port     = 9100
     protocol    = "tcp"
     cidr_blocks = ["10.10.0.0/16"]
   }
@@ -119,7 +127,7 @@ resource "aws_security_group" "private-sg-jenkins" {
     protocol    = "tcp"
     cidr_blocks = ["10.10.0.0/16"]
   }
-  
+
   ingress {
     description = "jenkins 8080 port"
     from_port   = 8080
@@ -127,7 +135,7 @@ resource "aws_security_group" "private-sg-jenkins" {
     protocol    = "tcp"
     cidr_blocks = ["10.10.0.0/16"]
   }
-  
+
   ingress {
     description = "jenkins 50000 port"
     from_port   = 50000
@@ -135,7 +143,7 @@ resource "aws_security_group" "private-sg-jenkins" {
     protocol    = "tcp"
     cidr_blocks = ["10.10.0.0/16"]
   }
-  
+
   ingress {
     description = "Consul port"
     from_port   = 8600
@@ -143,12 +151,20 @@ resource "aws_security_group" "private-sg-jenkins" {
     protocol    = "tcp"
     cidr_blocks = ["10.10.0.0/16"]
   }
-  
+
   ingress {
     description = "Consul port"
     from_port   = 8600
     to_port     = 8600
     protocol    = "udp"
+    cidr_blocks = ["10.10.0.0/16"]
+  }
+
+  ingress {
+    description = "node-exporter port"
+    from_port   = 9100
+    to_port     = 9100
+    protocol    = "tcp"
     cidr_blocks = ["10.10.0.0/16"]
   }
 
@@ -160,5 +176,60 @@ resource "aws_security_group" "private-sg-jenkins" {
   }
   tags = {
     Name = "private-sg-consul"
+  }
+}
+
+# Create a private group for Prometheus
+resource "aws_security_group" "private-sg-prometheus" {
+  name        = "homework-private-sg-prometheus"
+  description = "Security group for monitoring server"
+  vpc_id      = aws_vpc.homework-vpc.id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Allow ICMP from control host IP
+  ingress {
+    from_port   = 8
+    to_port     = 0
+    protocol    = "icmp"
+    cidr_blocks = ["10.10.0.0/16"]
+  }
+
+  # Allow all SSH External
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "TCP"
+    cidr_blocks = ["10.10.0.0/16"]
+  }
+
+  # Allow all traffic to HTTP port 3000
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "TCP"
+    cidr_blocks = ["10.10.0.0/16"]
+  }
+
+  ingress {
+    description = "node-exporter port"
+    from_port   = 9100
+    to_port     = 9100
+    protocol    = "tcp"
+    cidr_blocks = ["10.10.0.0/16"]
+  }
+
+
+  # Allow all traffic to HTTP port 9090
+  ingress {
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "TCP"
+    cidr_blocks = ["10.10.0.0/16"]
   }
 }

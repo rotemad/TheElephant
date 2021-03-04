@@ -44,4 +44,6 @@ To set up the SSH tunnel, run the following command:
 Open your preferred web-browser and go to `http://localhost:(required port)`
  - Use port 8080 for: **Jenkins Master** web-management console
  - Use port 8500 for: **Consul Servers** web-management console
+ - Use port 9090 for: **Prometheus** web-management console
+ - Use port 3000 for: **Grafana** web-management console
 
