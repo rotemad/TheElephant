@@ -1,11 +1,10 @@
 #!/bin/bash
-#Jenkins Install
-apt-get update
+#Docker install
 apt-get install apt-transport-https ca-certificates curl gnupg-agent software-properties-common -y
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
 apt-get update
-apt-get install docker-ce docker-ce-cli containerd.io git openjdk-8-jdk -y
+apt-get install docker-ce docker-ce-cli containerd.io -y
 usermod -aG docker ubuntu
 systemctl enable docker
 systemctl start docker
@@ -76,12 +75,12 @@ LimitNOFILE=65536
 WantedBy=multi-user.target
 EOF
 
-cat << EOF >/etc/consul.d/jenkins-worker.json
+cat << EOF >/etc/consul.d/prom-grafana.json
 {
   "service": {
-    "name": "Jenkins-Worker",
+    "name": "Prom-Grafana",
     "tags": [
-      "jenkins-worker"
+      "monitoring"
     ],
     "port": 22,
     "check": {
@@ -99,44 +98,71 @@ systemctl daemon-reload
 systemctl enable consul
 systemctl start consul
 
-#Node Exporter
-node_exporter_ver="0.18.0"
+#Prom conf
+IP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
+mkdir /etc/prometheus
+cat << EOF >/etc/prometheus/prometheus.yml
+# my global config
+global:
+  scrape_interval:     15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+  # scrape_timeout is set to the global default (10s).
 
-wget \
-  https://github.com/prometheus/node_exporter/releases/download/v$node_exporter_ver/node_exporter-$node_exporter_ver.linux-amd64.tar.gz \
-  -O /tmp/node_exporter-$node_exporter_ver.linux-amd64.tar.gz
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets:
+      # - alertmanager:9093
 
-tar zxvf /tmp/node_exporter-$node_exporter_ver.linux-amd64.tar.gz
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
 
-cp ./node_exporter-$node_exporter_ver.linux-amd64/node_exporter /usr/local/bin
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: 'prometheus'
 
-useradd --no-create-home --shell /bin/false node_exporter
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
 
-chown node_exporter:node_exporter /usr/local/bin/node_exporter
+    static_configs:
+    - targets: ['localhost:9090']
 
-mkdir -p /var/lib/node_exporter/textfile_collector
-chown node_exporter:node_exporter /var/lib/node_exporter
-chown node_exporter:node_exporter /var/lib/node_exporter/textfile_collector
+#  - job_name: 'node_exporter'
+#    scrape_interval: 15s
+#    static_configs:
+#      - targets: 
+#        - '172.17.0.1:9100'
 
-tee /etc/systemd/system/node_exporter.service &>/dev/null << EOF
-[Unit]
-Description=Node Exporter
-Wants=network-online.target
-After=network-online.target
-[Service]
-User=node_exporter
-Group=node_exporter
-Type=simple
-ExecStart=/usr/local/bin/node_exporter --collector.textfile.directory /var/lib/node_exporter/textfile_collector \
- --no-collector.infiniband
-[Install]
-WantedBy=multi-user.target
+  - job_name: 'Consul_service_exporters'
+    consul_sd_configs:
+      - server: '$IP:8500'
+    relabel_configs:
+      - source_labels: ['__address__']
+        target_label: '__address__'
+        regex: '(.*):.*'
+        separator: ':'
+        replacement: '\$1:9100'
+      - source_labels: [__meta_consul_node]
+        target_label: instance
+
+  - job_name: 'Consul-server'
+    metrics_path: '/v1/agent/metrics'
+    consul_sd_configs:
+      - server: '$IP:8500'
+        services:
+          - consul
+    relabel_configs:  
+      - source_labels: ['__address__']
+        target_label: '__address__'
+        regex: '(.*):.*'
+        separator: ':'
+        replacement: '\$1:8500'
 EOF
 
-rm -rf /tmp/node_exporter-$node_exporter_ver.linux-amd64.tar.gz \
-  ./node_exporter-$node_exporter_ver.linux-amd64
-
-systemctl daemon-reload
-systemctl start node_exporter
-status --no-pager node_exporter
-systemctl enable node_exporter
+docker run -d --name=prometheus --restart=unless-stopped -p 9090:9090 -v /etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
+docker run -d --name=grafana --restart=unless-stopped -p 3000:3000 grafana/grafana

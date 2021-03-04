@@ -6,7 +6,7 @@ module "eks" {
   subnets         = var.private_subnet_id_for_eks
 
   enable_irsa = true
-  
+
   tags = {
     Name = "OpsSchool-EKS"
   }

@@ -1,10 +1,10 @@
 # Create the consul-servers
 resource "aws_instance" "consul-servers" {
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = "t2.micro"
-  key_name               = var.key_pair
-  count                  = 3
-  subnet_id              = var.private_subnet_id
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = "t2.micro"
+  key_name      = var.key_pair
+  count         = 3
+  subnet_id     = var.private_subnet_id
   #availability_zone      = var.private_subnet_az[count.index]
   vpc_security_group_ids = var.consul_private_security_group
   iam_instance_profile   = aws_iam_instance_profile.consul-join.name
