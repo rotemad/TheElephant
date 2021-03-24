@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kandula-depoly
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: kandula-app
+  template:
+    metadata:
+      labels:
+        app: kandula-app
+    spec:
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: zone
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: kandula-app
+      - maxSkew: 1
+        topologyKey: node
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: kandula-app
+      containers:
+      - name: kandula-app
+        image: rotema/kandula:01
+        ports:
+        - containerPort: 5000
+          name: http
+          protocol: TCP
