@@ -77,8 +77,6 @@ edit `coredns.yaml` #FileLocationHere as in the example:
         forward . <consul-consul-dns cluster IP here>
  
 - Run install.sh script 
-<br/>
-
 
 <br/>
 
