@@ -52,7 +52,7 @@ In oreder to use and control the EKS cluster:
 
 - Get the aws-auth ARN role using:  
 `kubectl get configmap aws-auth -n kube-system -o yaml`  
-and edit `aws-auth-cm.yaml` #FileLocationHere as in the exemple:
+and edit [`aws-auth-cm.yaml`](kubernetes-control/aws-auth-cm.yaml)  as in the exemple:
 
       mapRoles: |
         - rolearn: <set your role ARN here>
@@ -69,7 +69,7 @@ and edit `aws-auth-cm.yaml` #FileLocationHere as in the exemple:
 
 - Get Consul's service cluster IP using:  
 `kubectl get svc`  and copy consul-consul-dns IP address.  
-edit `coredns.yaml` #FileLocationHere as in the example:
+edit [`coredns.yaml`](kubernetes-control/coredns.yaml) as in the example:
 
       consul {
         errors
@@ -112,6 +112,6 @@ Open your preferred web-browser and go to `http://localhost:(required port)`
 
 ### Uninstall
 
-- Run unistall.sh file under `/kubernetes-control` #FileLocationHere
+- Run unistall.sh file under `/kubernetes-control`
 - `terraform refresh`
 - `terraform destroy --auto-approve`
