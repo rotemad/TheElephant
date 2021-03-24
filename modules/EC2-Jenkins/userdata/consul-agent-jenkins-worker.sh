@@ -5,7 +5,7 @@ apt-get install apt-transport-https ca-certificates curl gnupg-agent software-pr
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
 apt-get update
-apt-get install docker-ce docker-ce-cli containerd.io git openjdk-8-jdk -y
+apt-get install docker-ce docker-ce-cli containerd.io git wget openjdk-8-jdk -y
 usermod -aG docker ubuntu
 systemctl enable docker
 systemctl start docker
@@ -79,18 +79,17 @@ EOF
 cat << EOF >/etc/consul.d/jenkins-worker.json
 {
   "service": {
-    "name": "Jenkins-Worker",
+    "name": "jenkins-worker",
     "tags": [
-      "jenkins-worker"
+      "jenkins"
     ],
-    "port": 22,
-    "check": {
-      "args": [
-        "tcp",
-        "localhost"
-      ],
-      "interval": "10s"
-    }
+  "check": {
+    "id": "Jenkins",
+    "name": "Jenkins Workers Status",
+    "tcp": "localhost:22",
+    "interval": "10s",
+    "timeout": "1s"
+  }
   }
 }
 EOF
@@ -98,6 +97,10 @@ EOF
 systemctl daemon-reload
 systemctl enable consul
 systemctl start consul
+
+#trivy install
+wget https://github.com/aquasecurity/trivy/releases/download/v0.16.0/trivy_0.16.0_Linux-64bit.deb
+dpkg -i trivy_0.16.0_Linux-64bit.deb
 
 #Node Exporter
 node_exporter_ver="0.18.0"
@@ -140,3 +143,39 @@ systemctl daemon-reload
 systemctl start node_exporter
 status --no-pager node_exporter
 systemctl enable node_exporter
+
+# filebeat
+wget https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-oss-7.11.0-amd64.deb
+dpkg -i filebeat-*.deb
+
+sudo mv /etc/filebeat/filebeat.yml /etc/filebeat/filebeat.yml.BCK
+
+cat <<\EOF > /etc/filebeat/filebeat.yml
+filebeat.modules:
+  - module: system
+    syslog:
+      enabled: true
+    auth:
+      enabled: false
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+setup.dashboards.enabled: false
+setup.template.name: "filebeat"
+setup.template.pattern: "filebeat-*"
+setup.template.settings:
+  index.number_of_shards: 1
+processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+  - add_cloud_metadata: ~
+output.elasticsearch:
+  hosts: [ "elk.service.opsschool.consul:9200" ]
+  index: "filebeat-%{[agent.version]}-%{+yyyy.MM.dd}"
+## OR
+#output.logstash:
+#  hosts: [ "127.0.0.1:5044" ]
+EOF
+
+systemctl enable filebeat.service
+systemctl start filebeat.service

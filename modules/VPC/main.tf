@@ -1,9 +1,12 @@
 # VPC:
 resource "aws_vpc" "homework-vpc" {
-  cidr_block = "10.10.0.0/16"
+  cidr_block = "10.10.0.0/16"  
+  enable_dns_hostnames = true
+  enable_dns_support   = true
 
   tags = {
     Name = "homework-vpc"
+    "kubernetes.io/cluster/eks-TheElephant" = "shared"
   }
 }
 
@@ -16,6 +19,8 @@ resource "aws_subnet" "homework-public-subnet" {
 
   tags = {
     Name = "public-subnet ${count.index + 1}"
+    "kubernetes.io/cluster/eks-TheElephant" = "shared"
+    "kubernetes.io/role/elb"                = "1"
   }
 }
 
@@ -27,6 +32,8 @@ resource "aws_subnet" "homework-private-subnet" {
 
   tags = {
     Name = "private-subnet ${count.index + 1}"
+    "kubernetes.io/cluster/eks-TheElephant" = "shared"
+    "kubernetes.io/role/internal-elb"       = "1"
   }
 }
 
@@ -36,6 +43,7 @@ resource "aws_internet_gateway" "homework-gw" {
 
   tags = {
     Name = "Internet-gateway"
+    "kubernetes.io/cluster/eks-TheElephant" = "shared"
   }
 }
 
@@ -47,6 +55,7 @@ resource "aws_eip" "nat_gateway" {
   # added tags to eips
   tags = {
     Name = "nat-eip ${count.index + 1}"
+    "kubernetes.io/cluster/eks-TheElephant" = "shared"
   }
 }
 
@@ -58,6 +67,7 @@ resource "aws_nat_gateway" "nat-gw" {
 
   tags = {
     Name = "nat-gw ${count.index + 1}"
+    "kubernetes.io/cluster/eks-TheElephant" = "shared"
   }
 }
 
@@ -68,6 +78,7 @@ resource "aws_route_table" "route_tables" {
 
   tags = {
     Name = var.route_tables_names[count.index]
+    "kubernetes.io/cluster/eks-TheElephant" = "shared"
   }
 }
 

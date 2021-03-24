@@ -84,14 +84,13 @@ cat << EOF >/etc/consul.d/mysql.json
     "tags": [
       "db"
     ],
-    "port": 22,
-    "check": {
-      "args": [
-        "tcp",
-        "localhost"
-      ],
-      "interval": "10s"
-    }
+  "check": {
+    "id": "mysql",
+    "name": "Mysql Status",
+    "tcp": "localhost:22",
+    "interval": "10s",
+    "timeout": "1s"
+  }
   }
 }
 EOF

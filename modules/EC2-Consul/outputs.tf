@@ -7,3 +7,8 @@ output "consul-instance-profile" {
   description = "Consul's instance profile"
   value       = aws_iam_instance_profile.consul-join.id
 }
+
+output "ec2-admin-arn" {
+  description = "ec2-all-for-k8s"
+  value       = aws_iam_instance_profile.consul-join.arn
+}

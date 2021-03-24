@@ -10,8 +10,9 @@ mkdir -p /home/ubuntu/jenkins_home
 chown -R ubuntu:ubuntu /home/ubuntu/jenkins_home
 systemctl enable docker
 systemctl start docker
+sleep 60
 docker run -d --restart=always -p 8080:8080 -p 50000:50000 -v /home/ubuntu/jenkins_home:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock --env JAVA_OPTS="-Djenkins.install.runSetupWizard=false" jenkins/jenkins
-docker exec -it `docker ps -q` /usr/local/bin/install-plugins.sh github workflow-aggregator docker build-monitor-plugin greenballs
+docker exec -it `docker ps -q` /usr/local/bin/install-plugins.sh github workflow-aggregator docker build-monitor-plugin greenballs kubernetes-cd
 docker restart `docker ps -q`
 
 #Consul agent install
@@ -81,21 +82,20 @@ LimitNOFILE=65536
 WantedBy=multi-user.target
 EOF
 
-cat << EOF >/etc/consul.d/jenkins-worker.json
+cat << EOF >/etc/consul.d/jenkins-master.json
 {
   "service": {
-    "name": "Jenkins-Master",
+    "name": "jenkins-master",
     "tags": [
-      "jenkins-master"
+      "jenkins"
     ],
-    "port": 8080,
-    "check": {
-      "args": [
-        "curl",
-        "localhost"
-      ],
-      "interval": "10s"
-    }
+  "check": {
+    "id": "Jenkins",
+    "name": "Jenkins Master Status",
+    "tcp": "localhost:8080",
+    "interval": "10s",
+    "timeout": "1s"
+  }
   }
 }
 EOF
@@ -145,3 +145,39 @@ systemctl daemon-reload
 systemctl start node_exporter
 status --no-pager node_exporter
 systemctl enable node_exporter
+
+# filebeat
+wget https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-oss-7.11.0-amd64.deb
+dpkg -i filebeat-*.deb
+
+sudo mv /etc/filebeat/filebeat.yml /etc/filebeat/filebeat.yml.BCK
+
+cat <<\EOF > /etc/filebeat/filebeat.yml
+filebeat.modules:
+  - module: system
+    syslog:
+      enabled: true
+    auth:
+      enabled: false
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+setup.dashboards.enabled: false
+setup.template.name: "filebeat"
+setup.template.pattern: "filebeat-*"
+setup.template.settings:
+  index.number_of_shards: 1
+processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+  - add_cloud_metadata: ~
+output.elasticsearch:
+  hosts: [ "elk.service.opsschool.consul:9200" ]
+  index: "filebeat-%{[agent.version]}-%{+yyyy.MM.dd}"
+## OR
+#output.logstash:
+#  hosts: [ "127.0.0.1:5044" ]
+EOF
+
+systemctl enable filebeat.service
+systemctl start filebeat.service
