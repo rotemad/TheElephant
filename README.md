@@ -67,17 +67,19 @@ and edit [`aws-auth-cm.yaml`](kubernetes-control/aws-auth-cm.yaml)  as in the ex
         groups:
           - system:masters
 
+- Run install.sh script file under `/kubernetes-control`
+
 - Get Consul's service cluster IP using:  
-`kubectl get svc`  and copy consul-consul-dns IP address.  
+`kubectl get svc consul-consul-dns`  and copy the IP address.  
 edit [`coredns.yaml`](kubernetes-control/coredns.yaml) as in the example:
 
       consul {
         errors
         cache 30
         forward . <consul-consul-dns cluster IP here>
- 
-- Run install.sh script 
 
+Run `kubectl apply -f coredns.yaml`
+ 
 <br/>
 
 ### Jenkins
