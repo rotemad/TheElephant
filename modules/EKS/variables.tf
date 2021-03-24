@@ -13,12 +13,13 @@ variable "private_subnet_id_for_eks" {
 locals {
   k8s_service_account_namespace = "default"
   k8s_service_account_name      = "opsschool-sa"
+  cluster_name                  = "eks-TheElephant"     
 }
-
+/*
 locals {
   cluster_name = "opsschool-eks-${random_string.suffix.result}"
 }
 resource "random_string" "suffix" {
   length  = 8
   special = false
-}
+}*/

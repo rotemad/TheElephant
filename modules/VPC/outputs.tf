@@ -33,6 +33,16 @@ output "private-sg-prometheus" {
   value       = aws_security_group.private-sg-prometheus.*.id
 }
 
+output "private-sg-elk" {
+  description = "The ID of the private security group"
+  value       = aws_security_group.private-sg-elk.*.id
+}
+
+output "private-sg-mysql" {
+  description = "The ID of the private security group"
+  value       = aws_security_group.private-sg-mysql.*.id
+}
+
 output "public-sg" {
   description = "The ID of the private security group"
   value       = aws_security_group.public-sg.*.id

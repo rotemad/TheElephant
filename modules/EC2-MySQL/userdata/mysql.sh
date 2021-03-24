@@ -1,25 +1,21 @@
 #!/bin/bash
-#Jenkins Install
-apt-get install apt-transport-https ca-certificates curl gnupg-agent software-properties-common -y
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+#Mysql install
 apt-get update
-apt-get install docker-ce docker-ce-cli containerd.io git openjdk-8-jdk -y
-usermod -aG docker ubuntu
-mkdir -p /home/ubuntu/jenkins_home
-chown -R ubuntu:ubuntu /home/ubuntu/jenkins_home
-systemctl enable docker
-systemctl start docker
-sleep 60
-docker run -d --restart=always -p 8080:8080 -p 50000:50000 -v /home/ubuntu/jenkins_home:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock --env JAVA_OPTS="-Djenkins.install.runSetupWizard=false" jenkins/jenkins
-docker exec -it `docker ps -q` /usr/local/bin/install-plugins.sh github workflow-aggregator docker build-monitor-plugin greenballs kubernetes-cd
-docker restart `docker ps -q`
+apt-get install mysql-common debsums libaio1 libmecab2 gnupg2 wget -y
+#wget https://repo.percona.com/apt/percona-release_latest.$(lsb_release -sc)_all.deb
+#dpkg -i percona-release_latest.$(lsb_release -sc)_all.deb
+apt-get update
+export MYSQL_ROOT_PASSWORD=123456
+export DEBIAN_FRONTEND=noninteractive
+echo "percona-server-server-5.7 percona-server-server-5.7/root-pass password $MYSQL_ROOT_PASSWORD" | debconf-set-selections
+echo "percona-server-server-5.7 percona-server-server-5.7/re-root-pass password $MYSQL_ROOT_PASSWORD" | debconf-set-selections
+apt-get install percona-server-server-5.7 -y
 
 #Consul agent install
 curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
 apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
 apt-get update
-apt-get install consul dnsmasq -y
+apt-get install consul dnsmasq -y 
 
 cat << EOF >/etc/dnsmasq.d/10-consul
 # Enable forward lookup of the 'consul' domain:
@@ -35,7 +31,6 @@ Domains=~consul
 EOF
 
 systemctl restart systemd-resolved.service
-
 
 useradd consul
 mkdir --parents /etc/consul.d
@@ -82,17 +77,17 @@ LimitNOFILE=65536
 WantedBy=multi-user.target
 EOF
 
-cat << EOF >/etc/consul.d/jenkins-master.json
+cat << EOF >/etc/consul.d/mysql.json
 {
   "service": {
-    "name": "jenkins-master",
+    "name": "mysql",
     "tags": [
-      "jenkins"
+      "db"
     ],
   "check": {
-    "id": "Jenkins",
-    "name": "Jenkins Master Status",
-    "tcp": "localhost:8080",
+    "id": "mysql",
+    "name": "Mysql Status",
+    "tcp": "localhost:22",
     "interval": "10s",
     "timeout": "1s"
   }

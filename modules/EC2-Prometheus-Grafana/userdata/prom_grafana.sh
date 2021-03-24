@@ -78,18 +78,26 @@ EOF
 cat << EOF >/etc/consul.d/prom-grafana.json
 {
   "service": {
-    "name": "Prom-Grafana",
+    "name": "prom-grafana",
     "tags": [
       "monitoring"
     ],
-    "port": 22,
-    "check": {
-      "args": [
-        "tcp",
-        "localhost"
-      ],
-      "interval": "10s"
-    }
+  "checks": [
+   {
+    "id": "Grafana",
+    "name": "Grafana Status",
+    "tcp": "localhost:3000",
+    "interval": "10s",
+    "timeout": "1s"
+  },
+  {
+    "id": "Prometheus",
+    "name": "Prometheus Status",
+    "tcp": "localhost:9090",
+    "interval": "10s",
+    "timeout": "1s"
+  }
+  ]
   }
 }
 EOF
@@ -164,5 +172,83 @@ scrape_configs:
         replacement: '\$1:8500'
 EOF
 
+#Grafana install
+apt-get install -y apt-transport-https
+apt-get install -y software-properties-common wget
+wget -q -O - https://packages.grafana.com/gpg.key | sudo apt-key add -
+echo "deb https://packages.grafana.com/oss/deb stable main" | sudo tee -a /etc/apt/sources.list.d/grafana.list
+apt-get update
+apt-get install grafana -y
+
+cat << EOF >/etc/grafana/provisioning/datasources/default.yaml
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    type: prometheus
+    url: http://localhost:9090
+
+
+  - name: Prometheus-k8s
+    type: prometheus
+    url: http://my-prometheus-server-default.service.opsschool.consul:9090
+EOF
+
+sed -i '/# enable anonymous access/a enabled = true' /etc/grafana/grafana.ini
+sed -i '/;default_home_dashboard_path/a default_home_dashboard_path = /etc/grafana/provisioning/dashboards/dashboard.json' /etc/grafana/grafana.ini
+
+wget https://grafana.com/api/dashboards/1860/revisions/22/download -O /etc/grafana/provisioning/dashboards/dashboard.json
+
+cat << EOF >/etc/grafana/provisioning/dashboards/default.yaml
+apiVersion: 1
+
+providers:
+ - name: 'default'
+   orgId: 1
+   folder: ''
+   folderUid: ''
+   type: file
+   options:
+     path: /etc/grafana/provisioning/dashboards
+EOF
+
+systemctl enable grafana-server.service
+systemctl start grafana-server.service
+
 docker run -d --name=prometheus --restart=unless-stopped -p 9090:9090 -v /etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
-docker run -d --name=grafana --restart=unless-stopped -p 3000:3000 grafana/grafana
+#docker run -d --name=grafana --restart=unless-stopped -p 3000:3000 grafana/grafana
+
+# filebeat
+wget https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-oss-7.11.0-amd64.deb
+dpkg -i filebeat-*.deb
+
+sudo mv /etc/filebeat/filebeat.yml /etc/filebeat/filebeat.yml.BCK
+
+cat <<\EOF > /etc/filebeat/filebeat.yml
+filebeat.modules:
+  - module: system
+    syslog:
+      enabled: true
+    auth:
+      enabled: false
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+setup.dashboards.enabled: false
+setup.template.name: "filebeat"
+setup.template.pattern: "filebeat-*"
+setup.template.settings:
+  index.number_of_shards: 1
+processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+  - add_cloud_metadata: ~
+output.elasticsearch:
+  hosts: [ "elk.service.opsschool.consul:9200" ]
+  index: "filebeat-%{[agent.version]}-%{+yyyy.MM.dd}"
+## OR
+#output.logstash:
+#  hosts: [ "127.0.0.1:5044" ]
+EOF
+
+systemctl enable filebeat.service
+systemctl start filebeat.service

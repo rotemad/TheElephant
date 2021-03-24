@@ -1,25 +1,62 @@
 #!/bin/bash
-#Jenkins Install
-apt-get install apt-transport-https ca-certificates curl gnupg-agent software-properties-common -y
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-apt-get update
-apt-get install docker-ce docker-ce-cli containerd.io git openjdk-8-jdk -y
-usermod -aG docker ubuntu
-mkdir -p /home/ubuntu/jenkins_home
-chown -R ubuntu:ubuntu /home/ubuntu/jenkins_home
-systemctl enable docker
-systemctl start docker
-sleep 60
-docker run -d --restart=always -p 8080:8080 -p 50000:50000 -v /home/ubuntu/jenkins_home:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock --env JAVA_OPTS="-Djenkins.install.runSetupWizard=false" jenkins/jenkins
-docker exec -it `docker ps -q` /usr/local/bin/install-plugins.sh github workflow-aggregator docker build-monitor-plugin greenballs kubernetes-cd
-docker restart `docker ps -q`
+#ELK stack install
+# elasticsearch
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-oss-7.10.2-amd64.deb
+dpkg -i elasticsearch-*.deb
+echo "network.host: 0.0.0.0" >> /etc/elasticsearch/elasticsearch.yml
+echo "discovery.type: single-node" >> /etc/elasticsearch/elasticsearch.yml
+systemctl enable elasticsearch
+systemctl start elasticsearch
+
+# kibana
+wget https://artifacts.elastic.co/downloads/kibana/kibana-oss-7.10.2-amd64.deb
+dpkg -i kibana-*.deb
+echo 'server.host: "0.0.0.0"' > /etc/kibana/kibana.yml
+systemctl enable kibana
+systemctl start kibana
+
+# filebeat
+wget https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-oss-7.11.0-amd64.deb
+dpkg -i filebeat-*.deb
+
+
+sudo mv /etc/filebeat/filebeat.yml /etc/filebeat/filebeat.yml.BCK
+
+cat <<\EOF > /etc/filebeat/filebeat.yml
+filebeat.modules:
+  - module: system
+    syslog:
+      enabled: true
+    auth:
+      enabled: false
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+setup.dashboards.enabled: false
+setup.template.name: "filebeat"
+setup.template.pattern: "filebeat-*"
+setup.template.settings:
+  index.number_of_shards: 1
+processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+  - add_cloud_metadata: ~
+output.elasticsearch:
+  hosts: [ "localhost:9200" ]
+  index: "filebeat-%{[agent.version]}-%{+yyyy.MM.dd}"
+## OR
+#output.logstash:
+#  hosts: [ "127.0.0.1:5044" ]
+EOF
+
+systemctl enable filebeat.service
+systemctl start filebeat.service
 
 #Consul agent install
 curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
 apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
 apt-get update
-apt-get install consul dnsmasq -y
+apt-get install consul dnsmasq -y 
 
 cat << EOF >/etc/dnsmasq.d/10-consul
 # Enable forward lookup of the 'consul' domain:
@@ -35,7 +72,6 @@ Domains=~consul
 EOF
 
 systemctl restart systemd-resolved.service
-
 
 useradd consul
 mkdir --parents /etc/consul.d
@@ -82,20 +118,29 @@ LimitNOFILE=65536
 WantedBy=multi-user.target
 EOF
 
-cat << EOF >/etc/consul.d/jenkins-master.json
+cat << EOF >/etc/consul.d/elk.json
 {
   "service": {
-    "name": "jenkins-master",
+    "name": "ELK",
     "tags": [
-      "jenkins"
+      "ELK"
     ],
-  "check": {
-    "id": "Jenkins",
-    "name": "Jenkins Master Status",
-    "tcp": "localhost:8080",
+    "checks": [
+   {
+    "id": "Kibana",
+    "name": "Kibana Status",
+    "tcp": "localhost:5601",
+    "interval": "10s",
+    "timeout": "1s"
+  },
+  {
+    "id": "Elasticsearch",
+    "name": "Elasticsearch Status",
+    "tcp": "localhost:9200",
     "interval": "10s",
     "timeout": "1s"
   }
+  ]
   }
 }
 EOF
@@ -145,39 +190,3 @@ systemctl daemon-reload
 systemctl start node_exporter
 status --no-pager node_exporter
 systemctl enable node_exporter
-
-# filebeat
-wget https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-oss-7.11.0-amd64.deb
-dpkg -i filebeat-*.deb
-
-sudo mv /etc/filebeat/filebeat.yml /etc/filebeat/filebeat.yml.BCK
-
-cat <<\EOF > /etc/filebeat/filebeat.yml
-filebeat.modules:
-  - module: system
-    syslog:
-      enabled: true
-    auth:
-      enabled: false
-filebeat.config.modules:
-  path: ${path.config}/modules.d/*.yml
-  reload.enabled: false
-setup.dashboards.enabled: false
-setup.template.name: "filebeat"
-setup.template.pattern: "filebeat-*"
-setup.template.settings:
-  index.number_of_shards: 1
-processors:
-  - add_host_metadata:
-      when.not.contains.tags: forwarded
-  - add_cloud_metadata: ~
-output.elasticsearch:
-  hosts: [ "elk.service.opsschool.consul:9200" ]
-  index: "filebeat-%{[agent.version]}-%{+yyyy.MM.dd}"
-## OR
-#output.logstash:
-#  hosts: [ "127.0.0.1:5044" ]
-EOF
-
-systemctl enable filebeat.service
-systemctl start filebeat.service
