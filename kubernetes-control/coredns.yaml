@@ -22,5 +22,5 @@ data:
     consul {
         errors
         cache 30
-        forward . 10.10.1.201
+        forward . <consul-consul-dns cluster IP here>
       }
