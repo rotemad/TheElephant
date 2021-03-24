@@ -5,12 +5,12 @@ metadata:
   namespace: kube-system
 data:
   mapRoles: |
-    - rolearn: arn:aws:iam::833589695469:role/eks-TheElephant2021032307354379580000000b
+    - rolearn: <set your role ARN here>
       username: system:node:{{EC2PrivateDNSName}}
       groups:
         - system:bootstrappers
         - system:nodes
-    - rolearn: arn:aws:iam::031034181336:role/aws_cli 
+    - rolearn: <set your role ARN here> 
       username: consul-join
       groups: 
         - system:masters
