@@ -16,6 +16,7 @@ TheElephant will setup a full application architecture (infrastructure, service 
  macOS using brew `brew install terraform@0.14` 
 
 <br/>
+
 ## How To use  
 
 Under _[variables.tf](https://github.com/rotemad/TheElephant/blob/main/variables.tf),_ set-up your [AWS profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) (the default profile is `default`)
@@ -39,6 +40,7 @@ Once the provisioning ends, you will get the following output:
 A general certificate `gen_key.pem` will be generated during the provisioning which can be used to login to all the hosts.
 
 <br/>
+
 ### EKS Cluster
 In oreder to use and control the EKS cluster:
 
@@ -79,6 +81,7 @@ edit `coredns.yaml` #FileLocationHere as in the example:
 
 
 <br/>
+
 ### Jenkins
 - Under Manage Credentials set up:   
 ssh key (gen_key.pem) for the workers connection  
@@ -90,6 +93,7 @@ Kubernetes config (can be found under localhost's .kube/config)
 
 
 <br/>
+
 ### Connect to the environment using the bastion host
 
 To keep the environment safe, the private network is not available directly from the <span>WWW</span>.
@@ -107,6 +111,7 @@ Open your preferred web-browser and go to `http://localhost:(required port)`
  - Use port 5601 for: **Kibana** web-management console
 
 <br/>
+
 ### Uninstall
 
 - Run unistall.sh file under `/kubernetes-control` #FileLocationHere
